@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+  <meta charset="utf-8" />
+
+  <head>
+    <title>Simple Map</title>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
+    <script
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB4pk7dk4ziaziNCI_x_7UUUAjsqLnrg1Q&callback=initMap&libraries=&v=weekly"
+      defer
+    ></script>
+    <style type="text/css">
+      /* Always set the map height explicitly to define the size of the div
+       * element that contains the map. */
+      #map {
+        height: 100%;
+      }
+
+      /* Optional: Makes the sample page fill the window. */
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+    <script>
+      "use strict";
+
+      let markers = [];
+      let selectedUrl = "";
+      function transportUrl(id) {
+        return (
+          "https://transpod.net/gtfs/api/vehiclesUpdate?id=" + id + "&locale=uk"
+        );
+      }
+
+      function CenterControl(controlDiv, title, payload) {
+        // Set CSS for the control border.
+        var controlUI = document.createElement("div");
+        controlUI.style.backgroundColor = "#fff";
+        controlUI.style.border = "2px solid #fff";
+        controlUI.style.borderRadius = "3px";
+        controlUI.style.boxShadow = "0 2px 6px rgba(0,0,0,.3)";
+        controlUI.style.cursor = "pointer";
+        controlUI.style.marginBottom = "22px";
+        controlUI.style.textAlign = "center";
+        controlUI.title = title;
+        controlUI.userInfo = payload;
+        controlDiv.appendChild(controlUI);
+
+        // Set CSS for the control interior.
+        var controlText = document.createElement("div");
+        controlText.style.color = "rgb(25,25,25)";
+        controlText.style.fontFamily = "Roboto,Arial,sans-serif";
+        controlText.style.fontSize = "10px";
+        controlText.style.lineHeight = "38px";
+        controlText.style.paddingLeft = "5px";
+        controlText.style.paddingRight = "5px";
+        controlText.textContent = title;
+        controlUI.appendChild(controlText);
+      }
+
+      function createControl(title, payload) {
+        const centerControlDiv = document.createElement("option");
+        const centerControl = new CenterControl(
+          centerControlDiv,
+          title,
+          payload
+        );
+        return centerControlDiv;
+      }
+
+      async function postData(url) {
+        // Default options are marked with *
+        const response = await fetch(url, {
+          method: "GET", // *GET, POST, PUT, DELETE, etc.
+          cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
+          credentials: "same-origin", // include, *same-origin, omit
+          headers: {
+            Accept: "application/json, text/plain, */*",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+            Connection: "keep-alive",
+            Host: "transpod.net",
+            Referer: "https://transpod.net/",
+            "Sec-Fetch-Dest": "empty",
+            "Sec-Fetch-Mode": "cors",
+            "Sec-Fetch-Site": "same-origin",
+            "X-AUTH": "T7EE3KBY8ZNFQ8XZ",
+          },
+          redirect: "follow", // manual, *follow, error
+          referrerPolicy: "no-referrer", // no-referrer, *client
+        });
+        const data = await response.json(); // parses JSON response into native JavaScript objects
+        return data;
+      }
+
+      function initSelect() {
+        const select = document.createElement("select");
+        select.style.backgroundColor = "#fff";
+        select.style.border = "2px solid #fff";
+        select.style.borderRadius = "3px";
+        select.style.boxShadow = "0 2px 6px rgba(0,0,0,.3)";
+        select.style.cursor = "pointer";
+        select.style.marginTop = "16px";
+        select.style.marginRight = "16px";
+        select.style.textAlign = "center";
+        select.style.fontSize = "20px";
+        select.style.lineHeight = "38px";
+        select.style.paddingLeft = "5px";
+        select.style.paddingRight = "5px";
+        select.onchange = () => {
+          const transport = select.item(select.selectedIndex).firstChild
+            .userInfo;
+          if (transport) {
+            selectedUrl = transportUrl(transport);
+            fillMarkers();
+          }
+        };
+        select.appendChild(createControl("..."));
+        return select;
+      }
+
+      function initTransport(map) {
+        const select = initSelect();
+        postData(
+          "https://transpod.net/otp/routers/default/index/routes?lang=uk"
+        ).then((data) => {
+          console.log(data);
+          map.controls[google.maps.ControlPosition.TOP_RIGHT].push(select);
+          data
+            ?.filter((t) => ["TROLLEY", "TRAM"].includes(t?.mode))
+            .map((transport) => {
+              const control = createTransportControl(transport);
+              select.appendChild(control);
+            });
+        });
+        setInterval(() => {
+          if (selectedUrl?.length && markers.length) {
+            fillMarkers();
+          }
+        }, 5000);
+      }
+
+      function transportType(transport) {
+        switch (transport.mode) {
+          case "TROLLEY":
+            return "Тралик";
+          case "TRAM":
+            return "Трэм";
+        }
+        return "Номер";
+      }
+
+      function transportIcon(markerData) {
+        switch (markerData.type) {
+          case "TROLLEY":
+            return "https://img.icons8.com/color/48/000000/trolleybus.png";
+          case "TRAM":
+            return "https://img.icons8.com/color/48/000000/tram.png";
+        }
+        return "";
+      }
+
+      function createTransportControl(transport) {
+        const number = transport.shortName.match(/\d+/g).map(Number);
+        const type = transportType(transport);
+        return createControl(type + " " + number, transport.id);
+      }
+
+      function fillMarkers(url) {
+        postData(selectedUrl).then((data) => {
+          markers.map((marker) => {
+            marker.setMap(null);
+          });
+          markers = [];
+          console.log(data); // JSON data parsed by `response.json()` cal
+          data.map((tram) => {
+            console.log(tram);
+            markers.push(
+              new google.maps.Marker({
+                map,
+                position: { lat: tram?.lat, lng: tram?.lon },
+                title: tram?.plate,
+                icon: transportIcon(tram),
+              })
+            );
+          });
+        });
+      }
+
+      let map;
+      function initMap() {
+        map = new google.maps.Map(document.getElementById("map"), {
+          center: {
+            lat: 46.4513028,
+            lng: 30.7442142,
+          },
+          zoom: 14,
+          zoomControl: false,
+          mapTypeControl: false,
+          streetViewControl: false,
+          rotateControl: false,
+          fullscreenControl: false,
+        });
+        initTransport(map);
+      }
+    </script>
+  </head>
+  <body>
+    <div id="map"></div>
+  </body>
+</html>
