@@ -339,7 +339,7 @@
                                     url = url + "?width=" + imageSize
                                 }
                                 const resource = {
-                                    id: CryptoUtils.uuid({ url }),
+                                    id: sha256(url + ""),
                                     type,
                                     url,
                                 }
