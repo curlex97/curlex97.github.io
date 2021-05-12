@@ -104,7 +104,7 @@
             async searchWikiPage(text) {
                 const response = await fetch(this.fullUrl + "?action=query&list=search&srsearch=" +
                     encodeURIComponent(text) + "&format=json&origin=*", {
-                        headers: { 'Access-Control-Allow-Origin': '*' }
+                    mode: "same-origin"
                 })
                 return parsedResponse(response)
             }
@@ -112,7 +112,7 @@
             async searchWikiPages(text, limit = 10) {
                 const response = await fetch(this.fullUrl + "?action=opensearch&search=" +
                     encodeURIComponent(text) + "&limit=" + limit + "&namespace=0&format=json&origin=*", {
-                        headers: { 'Access-Control-Allow-Origin': '*' }
+                    mode: "same-origin"
                 })
                 return parsedResponse(response)
             }
@@ -120,14 +120,14 @@
             async searchWikiRelations(title, limit = 10) {
                 const response = await fetch(this.fullUrl + "?action=query&list=search&srsearch=morelike:" +
                     encodeURIComponent(title) + "&srlimit=" + limit + "&srprop=size&format=json", {
-                        headers: { 'Access-Control-Allow-Origin': '*' }
+                    mode: "same-origin"
                 })
                 return parsedResponse(response)
             }
 
             async parseWikiPage(pageId) {
                 const response = await fetch(this.fullUrl + "?action=parse" + "&pageid=" + pageId + "&format=json&origin=*", {
-                    headers: { 'Access-Control-Allow-Origin': '*' }
+                    mode: "same-origin"
                 })
                 return parsedResponse(response)
             }
@@ -135,7 +135,7 @@
             async prefixWikiPages(title) {
                 const response = await fetch(this.fullUrl + "?action=query&list=prefixsearch&pssearch=" +
                     encodeURIComponent(title) + "&format=json&origin=*", {
-                        headers: { 'Access-Control-Allow-Origin': '*' }
+                    mode: "same-origin"
                 })
                 return parsedResponse(response)
             }
@@ -143,7 +143,7 @@
             async searchWikiGeo(title) {
                 const response = await fetch(this.fullUrl + "?action=query&prop=coordinates&titles=" +
                     encodeURIComponent(title) + "&format=json&origin=*", {
-                    headers: { 'Access-Control-Allow-Origin': '*' }
+                    mode: "same-origin"
                 })
                 return parsedResponse(response)
             }
