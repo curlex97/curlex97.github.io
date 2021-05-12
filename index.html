@@ -1,214 +1,470 @@
-<!DOCTYPE html>
 <html>
-  <meta charset="utf-8" />
 
-  <head>
-    <title>Simple Map</title>
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
-    <script
-      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB4pk7dk4ziaziNCI_x_7UUUAjsqLnrg1Q&callback=initMap&libraries=&v=weekly"
-      defer
-    ></script>
-    <style type="text/css">
-      /* Always set the map height explicitly to define the size of the div
-       * element that contains the map. */
-      #map {
-        height: 100%;
-      }
+<head>
+    <title>Ario</title>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-sha256/0.9.0/sha256.min.js"></script>
+    <style>
+        svg {
+            border: solid 1px #ccc;
+        }
 
-      /* Optional: Makes the sample page fill the window. */
-      html,
-      body {
-        height: 100%;
-        margin: 0;
-        padding: 0;
-      }
+        .link {
+            fill: none;
+            stroke: #ccc;
+            stroke-width: 1.5px;
+        }
     </style>
-    <script>
-      "use strict";
+</head>
 
-      let markers = [];
-      let selectedUrl = "";
-      function transportUrl(id) {
-        return (
-          "https://transpod.net/gtfs/api/vehiclesUpdate?id=" + id + "&locale=uk"
-        );
-      }
+<body>
+    <script lang="javascript">
 
-      function CenterControl(controlDiv, title, payload) {
-        // Set CSS for the control border.
-        var controlUI = document.createElement("div");
-        controlUI.style.backgroundColor = "#fff";
-        controlUI.style.border = "2px solid #fff";
-        controlUI.style.borderRadius = "3px";
-        controlUI.style.boxShadow = "0 2px 6px rgba(0,0,0,.3)";
-        controlUI.style.cursor = "pointer";
-        controlUI.style.marginBottom = "22px";
-        controlUI.style.textAlign = "center";
-        controlUI.title = title;
-        controlUI.userInfo = payload;
-        controlDiv.appendChild(controlUI);
+        // Model + Config
+        // ========================================================
 
-        // Set CSS for the control interior.
-        var controlText = document.createElement("div");
-        controlText.style.color = "rgb(25,25,25)";
-        controlText.style.fontFamily = "Roboto,Arial,sans-serif";
-        controlText.style.fontSize = "10px";
-        controlText.style.lineHeight = "38px";
-        controlText.style.paddingLeft = "5px";
-        controlText.style.paddingRight = "5px";
-        controlText.textContent = title;
-        controlUI.appendChild(controlText);
-      }
-
-      function createControl(title, payload) {
-        const centerControlDiv = document.createElement("option");
-        const centerControl = new CenterControl(
-          centerControlDiv,
-          title,
-          payload
-        );
-        return centerControlDiv;
-      }
-
-      async function postData(url) {
-        // Default options are marked with *
-        const response = await fetch(url, {
-          method: "GET", // *GET, POST, PUT, DELETE, etc.
-          cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
-          credentials: "same-origin", // include, *same-origin, omit
-          headers: {
-            Accept: "application/json, text/plain, */*",
-            "Accept-Encoding": "gzip, deflate, br",
-            "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
-            Connection: "keep-alive",
-            Host: "transpod.net",
-            Referer: "https://transpod.net/",
-            "Sec-Fetch-Dest": "empty",
-            "Sec-Fetch-Mode": "cors",
-            "Sec-Fetch-Site": "same-origin",
-            "X-AUTH": "T7EE3KBY8ZNFQ8XZ",
-          },
-          redirect: "follow", // manual, *follow, error
-          referrerPolicy: "no-referrer", // no-referrer, *client
-        });
-        const data = await response.json(); // parses JSON response into native JavaScript objects
-        return data;
-      }
-
-      function initSelect() {
-        const select = document.createElement("select");
-        select.style.backgroundColor = "#fff";
-        select.style.border = "2px solid #fff";
-        select.style.borderRadius = "3px";
-        select.style.boxShadow = "0 2px 6px rgba(0,0,0,.3)";
-        select.style.cursor = "pointer";
-        select.style.marginTop = "16px";
-        select.style.marginRight = "16px";
-        select.style.textAlign = "center";
-        select.style.fontSize = "20px";
-        select.style.lineHeight = "38px";
-        select.style.paddingLeft = "5px";
-        select.style.paddingRight = "5px";
-        select.onchange = () => {
-          const transport = select.item(select.selectedIndex).firstChild
-            .userInfo;
-          if (transport) {
-            selectedUrl = transportUrl(transport);
-            fillMarkers();
-          }
-        };
-        select.appendChild(createControl("..."));
-        return select;
-      }
-
-      function initTransport(map) {
-        const select = initSelect();
-        postData(
-          "https://transpod.net/otp/routers/default/index/routes?lang=uk"
-        ).then((data) => {
-          console.log(data);
-          map.controls[google.maps.ControlPosition.TOP_RIGHT].push(select);
-          data
-            ?.filter((t) => ["TROLLEY", "TRAM"].includes(t?.mode))
-            .map((transport) => {
-              const control = createTransportControl(transport);
-              select.appendChild(control);
-            });
-        });
-        setInterval(() => {
-          if (selectedUrl?.length && markers.length) {
-            fillMarkers();
-          }
-        }, 5000);
-      }
-
-      function transportType(transport) {
-        switch (transport.mode) {
-          case "TROLLEY":
-            return "Тралик";
-          case "TRAM":
-            return "Трэм";
+        let root = {
+            "name": "A", "info": "tst", "children": [
+                {
+                    "name": "A1",
+                    "children": [
+                        { "name": "A12" },
+                        { "name": "A13" },
+                        { "name": "A14" },
+                        { "name": "A15" },
+                        { "name": "A16" }
+                    ]
+                },
+                {
+                    "name": "A2",
+                    "children": [
+                        { "name": "A21" },
+                        {
+                            "name": "A22", "children": [
+                                { "name": "A221" },
+                                { "name": "A222" },
+                                { "name": "A223" },
+                                { "name": "A224" }
+                            ]
+                        },
+                        { "name": "A23" },
+                        { "name": "A24" },
+                        { "name": "A25" }]
+                },
+                {
+                    "name": "A3",
+                    "children": [
+                        {
+                            "name": "A31", "children": [
+                                { "name": "A311" },
+                                { "name": "A312" },
+                                { "name": "A313" },
+                                { "name": "A314" },
+                                { "name": "A315" }
+                            ]
+                        }]
+                }
+            ]
         }
-        return "Номер";
-      }
 
-      function transportIcon(markerData) {
-        switch (markerData.type) {
-          case "TROLLEY":
-            return "https://img.icons8.com/color/48/000000/trolleybus.png";
-          case "TRAM":
-            return "https://img.icons8.com/color/48/000000/tram.png";
+        const wikiUrl = "https://%lang%.wikipedia.org/w/api.php"
+        const resourceUrl = "https://commons.wikimedia.org/wiki/Special:FilePath/"
+        const googleUrl = "https://language.googleapis.com/v1beta2/"
+        const googleKey = "AIzaSyB4pk7dk4ziaziNCI_x_7UUUAjsqLnrg1Q"
+
+        const imageSize = 300
+        const height = window.screen.height
+        const width = window.screen.width
+
+        // Services
+        // ========================================================
+
+        function parsedResponse(response) {
+            if (response.ok) {
+                return response.json()
+            }
+            let message = { error: response.status, text: response.statusText }
+            alert(message.error + ": " + message.text)
+            return message
         }
-        return "";
-      }
 
-      function createTransportControl(transport) {
-        const number = transport.shortName.match(/\d+/g).map(Number);
-        const type = transportType(transport);
-        return createControl(type + " " + number, transport.id);
-      }
 
-      function fillMarkers(url) {
-        postData(selectedUrl).then((data) => {
-          markers.map((marker) => {
-            marker.setMap(null);
-          });
-          markers = [];
-          console.log(data); // JSON data parsed by `response.json()` cal
-          data.map((tram) => {
-            console.log(tram);
-            markers.push(
-              new google.maps.Marker({
-                map,
-                position: { lat: tram?.lat, lng: tram?.lon },
-                title: tram?.plate,
-                icon: transportIcon(tram),
-              })
-            );
-          });
-        });
-      }
+        class WikiService {
+            language = "en"
+            fullUrl = ""
 
-      let map;
-      function initMap() {
-        map = new google.maps.Map(document.getElementById("map"), {
-          center: {
-            lat: 46.4513028,
-            lng: 30.7442142,
-          },
-          zoom: 14,
-          zoomControl: false,
-          mapTypeControl: false,
-          streetViewControl: false,
-          rotateControl: false,
-          fullscreenControl: false,
-        });
-        initTransport(map);
-      }
+            constructor(language) {
+                this.language = language ?? this.language
+                this.fullUrl = wikiUrl.split("%lang%").join(this.language)
+            }
+            static for(language) {
+                return new WikiService(language)
+            }
+
+            async searchWikiPage(text) {
+                const response = await fetch(this.fullUrl + "?action=query&list=search&srsearch=" +
+                    encodeURIComponent(text) + "&format=json&origin=*", {
+                        headers: { 'Access-Control-Allow-Origin': '*' }
+                })
+                return parsedResponse(response)
+            }
+
+            async searchWikiPages(text, limit = 10) {
+                const response = await fetch(this.fullUrl + "?action=opensearch&search=" +
+                    encodeURIComponent(text) + "&limit=" + limit + "&namespace=0&format=json&origin=*", {
+                        headers: { 'Access-Control-Allow-Origin': '*' }
+                })
+                return parsedResponse(response)
+            }
+
+            async searchWikiRelations(title, limit = 10) {
+                const response = await fetch(this.fullUrl + "?action=query&list=search&srsearch=morelike:" +
+                    encodeURIComponent(title) + "&srlimit=" + limit + "&srprop=size&format=json", {
+                        headers: { 'Access-Control-Allow-Origin': '*' }
+                })
+                return parsedResponse(response)
+            }
+
+            async parseWikiPage(pageId) {
+                const response = await fetch(this.fullUrl + "?action=parse" + "&pageid=" + pageId + "&format=json&origin=*", {
+                    headers: { 'Access-Control-Allow-Origin': '*' }
+                })
+                return parsedResponse(response)
+            }
+
+            async prefixWikiPages(title) {
+                const response = await fetch(this.fullUrl + "?action=query&list=prefixsearch&pssearch=" +
+                    encodeURIComponent(title) + "&format=json&origin=*", {
+                        headers: { 'Access-Control-Allow-Origin': '*' }
+                })
+                return parsedResponse(response)
+            }
+
+            async searchWikiGeo(title) {
+                const response = await fetch(this.fullUrl + "?action=query&prop=coordinates&titles=" +
+                    encodeURIComponent(title) + "&format=json&origin=*", {
+                    headers: { 'Access-Control-Allow-Origin': '*' }
+                })
+                return parsedResponse(response)
+            }
+        }
+
+        class GoogleService {
+            text = ""
+            static Service = {
+                Entities: "documents:analyzeEntities",
+                Syntax: "documents:analyzeSyntax"
+            }
+            static Content = {
+                Plain: "PLAIN_TEXT",
+                Html: "HTML"
+            }
+
+            constructor(text) {
+                this.text = text
+            }
+            static for(text) {
+                return new GoogleService(text)
+            }
+
+            async entities() {
+                return await this.request(
+                    GoogleService.Service.Entities,
+                    GoogleService.Content.Html,
+                    this.text
+                )
+            }
+
+            async syntax() {
+                return await this.request(
+                    GoogleService.Service.Syntax,
+                    GoogleService.Content.Html,
+                    this.text
+                )
+            }
+
+            async request(service, type, content) {
+                const response = await fetch(
+                    googleUrl + service + "?key=" + googleKey,
+                    {
+                        method: 'POST',
+                        cache: 'no-cache',
+                        headers: { 'Content-Type': 'application/json' },
+                        redirect: 'follow',
+                        body: JSON.stringify({
+                            document: { type, content },
+                            encodingType: "UTF8",
+                        })
+                    })
+                return parsedResponse(response)
+            }
+
+        }
+
+        // Resolvers
+        // ========================================================
+
+        class WikiResolver {
+
+            static async localized(title) {
+                const resolver = new WikiResolver()
+                const syntax = await GoogleService.for(title).syntax()
+                console.log(syntax.language)
+                resolver.service = WikiService.for(syntax.language)
+                return resolver
+            }
+            service
+
+            static Resource = {
+                Audio: "Audio",
+                Video: "Video",
+                Image: "Image",
+                Link: "Link",
+                Other: "Other"
+            }
+
+            async load(hero) {
+                const pagesInfo = await this.service.searchWikiPage(hero.title)
+                const openSearch = await this.service.searchWikiPages(hero.title)
+
+                if (pagesInfo && pagesInfo.query && pagesInfo.query.search && openSearch) {
+                    const searchInfo = pagesInfo.query.search
+                    if (searchInfo.length > 0) {
+                        if (searchInfo[0].pageid) {
+                            const parseInfo = await this.service.parseWikiPage(
+                                searchInfo[0].pageid
+                            )
+                            if (parseInfo) {
+                                return await this.parse({
+                                    pagesInfo,
+                                    openSearch,
+                                    parseInfo,
+                                    i: 0,
+                                    // text: hero.text,
+                                })
+                            }
+                        }
+                    }
+                }
+                return null
+            }
+
+            async parse({ text, pagesInfo, openSearch, parseInfo, i }) {
+                const wiki = {
+                    id: sha256(pagesInfo.pageid + ""),
+                    url:
+                        openSearch && openSearch[3] && openSearch[3][i] ? openSearch[3][i] : "",
+                    pageId: pagesInfo.pageid,
+                    title:
+                        openSearch && openSearch[1] && openSearch && openSearch[1][i]
+                            ? openSearch[1][i]
+                            : "",
+                    description: pagesInfo.snippet,
+                    text,
+                }
+                if (parseInfo && parseInfo.parse) {
+                    const parse = parseInfo.parse
+                    if (parse.properties) {
+                        const props = parse.properties
+                        const shortDesc = props.find((p) => p.name === "wikibase-shortdesc")
+                        if (shortDesc) {
+                            wiki.shortDescription = shortDesc["*"]
+                        }
+                    }
+                }
+                wiki.parseRaw = JSON.stringify(parseInfo)
+                wiki.openSearchRaw = JSON.stringify(openSearch)
+                wiki.pagesRaw = JSON.stringify(pagesInfo)
+                console.log(wiki)
+
+                return wiki
+            }
+
+            async relations(parent, limit = 10) {
+                const wikies = []
+                const relations = await this.service.searchWikiRelations(parent.title, limit)
+
+                if (relations && relations.query && relations.query.search) {
+                    for (const relation of relations.query.search) {
+                        if (relation.ns === 0) {
+                            const hero = {
+                                id: sha256(relation.pageid),
+                                title: relation.title,
+                                // text: parent.text
+                            }
+                            const wiki = await this.load(hero)
+                            if (wiki) {
+                                wikies.push(wiki)
+                            }
+                        }
+                    }
+                }
+                return wikies
+            }
+
+            resources(wiki) {
+                const resources = []
+                if (wiki.parseRaw) {
+                    const parseInfo = JSON.parse(wiki.parseRaw)
+                    if (parseInfo && parseInfo.parse) {
+                        const parse = parseInfo.parse
+
+                        if (parse.images) {
+                            const resourcesInfo = parse.images
+
+                            for (let i = 2; i < resourcesInfo.length; ++i) {
+                                const name = resourcesInfo[i]
+                                const type = this.resourceTypeByExt(name)
+
+                                let url = resourceUrl + name
+                                if (type === WikiResolver.Resource.Image && imageSize) {
+                                    url = url + "?width=" + imageSize
+                                }
+                                const resource = {
+                                    id: CryptoUtils.uuid({ url }),
+                                    type,
+                                    url,
+                                }
+                                resources.push(resource)
+                            }
+                        }
+                        if (parse.externallinks) {
+                            for (const externalLink of parse.externallinks) {
+                                const resource = {
+                                    id: sha256(externalLink),
+                                    type: WikiResolver.Resource.Link,
+                                    url: externalLink,
+                                }
+                                resources.push(resource)
+                            }
+                        }
+                    }
+                }
+                return resources
+            }
+
+            mentions(wiki) {
+                const mentions = []
+                if (wiki.pagesRaw && wiki.openSearchRaw) {
+                    const pagesInfo = JSON.parse(wiki.pagesRaw)
+                    const openSearch = JSON.parse(wiki.openSearchRaw)
+                    if (openSearch && pagesInfo && pagesInfo.query && pagesInfo.query.search) {
+                        const searchInfo = pagesInfo.query.search
+                        for (let i = 1; i < searchInfo.length; ++i) {
+                            const mentionInfo = searchInfo[i]
+                            // let mention = this.parse({mentionInfo, openSearch, i})
+                            // mention = await this.parseWiki(mention)
+                            // mentions.push(mention)
+                        }
+                    }
+                }
+                return mentions
+            }
+
+            resourceTypeByExt(fileName) {
+                const ext = fileName.substr(fileName.length - 4, 4).toLowerCase()
+                switch (ext) {
+                    case ".ogg":
+                        return WikiResolver.Resource.Audio
+                    case ".png":
+                    case ".svg":
+                    case ".jpg":
+                    case ".jpeg":
+                        return WikiResolver.Resource.Image
+                }
+                return WikiResolver.Resource.Other
+            }
+        }
+
+        // ========================================================
+
+        // Actions
+        // ========================================================
+
+        async function loadTree(title) {
+            const resolver = await WikiResolver.localized(title, "")
+            const hero = await resolver.load({ title, text: "" })
+            const relations = await resolver.relations(hero, 10)
+            const mentions = resolver.mentions(hero)
+            const resources = resolver.resources(hero)
+            return { hero, relations, mentions, resources }
+        }
+
+        function drawTree(input) {
+
+            // Definitions
+            // ========================================================
+
+            let diameter = height * 0.75
+            let radius = diameter / 2
+
+            let data = d3.hierarchy(input)
+            let svg = d3.select('body')
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height)
+            // ========================================================
+
+
+            // Engine Initialization
+            // ========================================================
+            let tree = d3.tree()
+                .size([2 * Math.PI, radius])
+                .separation(function (a, b) {
+                    return (a.parent == b.parent ? 1 : 2) / a.depth
+                })
+            let treeData = tree(data)
+            let nodes = treeData.descendants()
+            let links = treeData.links()
+            let graphGroup = svg.append('g')
+                .attr('transform', "translate(" + (width / 2) + "," + (height / 2) + ")")
+            // ========================================================
+
+            // Drawing Functions
+            // ========================================================
+            graphGroup.selectAll(".link")
+                .data(links)
+                .join("path")
+                .attr("class", "link")
+                .attr("d", d3.linkRadial()
+                    .angle(d => d.x)
+                    .radius(d => d.y))
+
+            let node = graphGroup
+                .selectAll(".node")
+                .data(nodes)
+                .join("g")
+                .attr("class", "node")
+                .attr("transform", function (d) {
+                    return `rotate(${d.x * 180 / Math.PI - 90})`
+                        + `translate(${d.y}, 0)`
+                })
+            node.append("circle").attr("r", 1)
+            node.append("text")
+                .attr("font-family", "sans-serif")
+                .attr("font-size", 12)
+                .attr("dx", function (d) { return d.x < Math.PI ? 8 : -8 })
+                .attr("dy", ".31em")
+                .attr("text-anchor", function (d) {
+                    return d.x < Math.PI ? "start" : "end"
+                })
+                .attr("transform", function (d) {
+                    return d.x < Math.PI ? null : "rotate(180)"
+                })
+                .text(function (d) { return d.data.name })
+            // ========================================================
+        }
+
+        // ========================================================
+
+        // Execution Block
+        // ========================================================
+        loadTree("Sun").then(entities => {
+            console.log(entities)
+        })
+        // ========================================================
+
     </script>
-  </head>
-  <body>
-    <div id="map"></div>
-  </body>
+</body>
+
 </html>
