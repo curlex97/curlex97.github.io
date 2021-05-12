@@ -306,7 +306,7 @@
                     for (const relation of relations.query.search) {
                         if (relation.ns === 0) {
                             const hero = {
-                                id: sha256(relation.pageid),
+                                id: sha256(relation.pageid + ""),
                                 title: relation.title,
                                 // text: parent.text
                             }
@@ -349,7 +349,7 @@
                         if (parse.externallinks) {
                             for (const externalLink of parse.externallinks) {
                                 const resource = {
-                                    id: sha256(externalLink),
+                                    id: sha256(externalLink + ""),
                                     type: WikiResolver.Resource.Link,
                                     url: externalLink,
                                 }
